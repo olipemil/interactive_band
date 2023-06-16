@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import math
-from scipy import ndimage
 import copy
 
 
@@ -20,9 +19,9 @@ class TBModel(object):
         else:
             self.set_min = True
             self.min_hopping_dist = min_hopping_dist
-        print(self._a)
+        #print(self._a)
         self.cartAtoms = _red_to_cart((self._a[0], self._a[1], self._a[2]), self.primAtoms)
-        print(self.cartAtoms)
+        #print(self.cartAtoms)
         self.orbatomnum = np.array([0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,3,3,3,3])
         self.orbatomnum = np.array([0,0,0,0,1,1,1,1])
 
@@ -39,18 +38,18 @@ class TBModel(object):
             orb_cartcoords = np.array(orb_cartcoords)
             orb_redcoords = _cart_to_red((self._a[0], self._a[1], self._a[2]),orb_cartcoords)
         self.orb_redcoords = orb_redcoords
-        print(self.orb_redcoords)
+        #print(self.orb_redcoords)
 
 
     def read_TBparams(self,file = "test_hr.dat.txt"):
         #get TB params from a file formatted like wannier90_hr.dat
         filename = self.directory + file
-        print(filename)
+        #print(filename)
         filedata = open(filename)
         filelines = filedata.readlines()
         num_orbs = int(filelines[1])
         self.num_orbs = num_orbs
-        print(num_orbs)
+        print("number of orbitals:",num_orbs)
         if self.orbs_orth == True:
             first_line = 100 #3+num_orbs #12
         else:
@@ -63,13 +62,13 @@ class TBModel(object):
                 self.aeorb_overlap[orb1] = [float(i) for i in line.strip().split()]
             print(self.aeorb_overlap)
         last_line = len(filelines)
-        print(filelines[first_line])
+        #print(filelines[first_line])
         count = 0
         num_each_dir = 1# abs(int(filelines[first_line].split()[0]))
         self.num_each_dir = num_each_dir
         num_trans = num_each_dir*2+1
         self.num_trans = num_trans
-        print(num_trans)
+        #print(num_trans)
         #generate list of the displacement between translations
         vec_to_trans = np.zeros((num_trans,num_trans,num_trans,3))
         for x in range(num_trans):
@@ -96,14 +95,14 @@ class TBModel(object):
                 #print(same_atom)
 
                 TB_params[orb1, orb2, trans1, trans2, trans3] = value
-                if (same_atom < 0.001).all() and (trans1==0 and trans2==0 and trans3==0) and orb1!=orb2:
-                    print("set to zero!", same_atom)
+                #if (same_atom < 0.001).all() and (trans1==0 and trans2==0 and trans3==0) and orb1!=orb2:
+                    #print("set to zero!", same_atom)
                     #TB_params[orb1,orb2,trans1,trans2,trans3] = 0
         self.TB_params = TB_params
-        print(info)
-        print(float(info[5]))
-        print(TB_params[:,:,0,0,0])
-        print(count)
+        #print(info)
+        #print(float(info[5]))
+        #print(TB_params[:,:,0,0,0])
+        #print(count)
 
     def set_hoppings(self,value,orb1,orb2,trans,set_conjugate=True):
         (trans1,trans2,trans3) = trans
@@ -131,8 +130,8 @@ class TBModel(object):
         self._a2 = np.array([float(i) for i in filelines[2 + 1].strip().split()])
         self._a3 = np.array([float(i) for i in filelines[2 + 2].strip().split()])
         self._a = np.array([self._a1,self._a2,self._a3])
-        print(self._grid)
-        print(self._a)
+        #print(self._grid)
+        #print(self._a)
         self.orbitals = {}
 
         for orb in range(self.num_orbs):
@@ -155,9 +154,9 @@ class TBModel(object):
         X, Y, Z = np.mgrid[0:(1 - 1 / self.grid[0]):self.grid[0] * 1j, 0:(1 - 1 / self.grid[1]):self.grid[1] * 1j,0:(1 - 1 / self.grid[2]):self.grid[2] * 1j]
         self.cartXYZ = _red_to_cart((self._a[0], self._a[1], self._a[2]),np.array([X.flatten(), Y.flatten(), Z.flatten()]).transpose())
         self.cartXYZ = self.cartXYZ.transpose()
-        print(self.cartXYZ[0])
-        print(self.cartXYZ[1])
-        print(self.cartXYZ[2])
+        #print(self.cartXYZ[0])
+        #print(self.cartXYZ[1])
+        #print(self.cartXYZ[2])
         self.min_xyzreduced = {}
         for atomnum in range(self.numAtoms):
             atom = self.cartAtoms[atomnum]
@@ -169,7 +168,7 @@ class TBModel(object):
                     for trans3 in range(3):
                         vec = (trans1 - 1) * self._a[0] + (trans2 - 1) * self._a[1] + (trans3 - 1) * self._a[2]
                         all_atoms.append(vec + atom)
-            print(all_atoms)
+            #print(all_atoms)
             point = self.cartXYZ
             min_rad = np.ones((len(self.cartXYZ[0]))) * 100
             min_phi = np.ones((len(self.cartXYZ[0]))) * 100
@@ -202,8 +201,8 @@ class TBModel(object):
             #self.min_radthetaphi[str(atomnum)] = [min_rad,min_theta,min_phi]
             #self.min_xyz[str(atomnum)] = [min_x,min_y,min_z]
             self.min_xyzreduced[str(atomnum)] = _cart_to_red((self._a[0], self._a[1], self._a[2]), np.array([min_x,min_y,min_z]).transpose()).transpose()
-        print(self.min_xyzreduced[str(0)][:25])
-        print(self.min_xyzreduced[str(1)][:25])
+        #print(self.min_xyzreduced[str(0)][:25])
+        #print(self.min_xyzreduced[str(1)][:25])
 
         if self.recip == True:
             # get reciprocal orbitals
@@ -238,67 +237,6 @@ class TBModel(object):
                     mesh[t] = coeff
                 grided_recip_orbs[orb] = mesh
             self.centered_recip_orbs = grided_recip_orbs
-
-    def test_if_kpt_are_same(self):
-        kpt1 = [0,0,0]
-        kpt2 = [0.25,0.25,0.25]
-        gpoints = self.generate_gpnts(kpt1)
-        num_gpnts = len(gpoints)
-        print("gpts:", num_gpnts)  # , gpoints)
-        g_coords = []
-        for gp in gpoints:
-            t = tuple(gp.astype(np.int_) + (self.grid / 2).astype(np.int_))
-            g_coords.append(t)
-        g_coords = np.array(g_coords)
-        # g_coords = self.g_coords
-        gplusk_coords = g_coords.transpose() + np.array([kpt1]).transpose()
-        adjusted_orbs = {}
-        for orb in range(self.num_orbs):
-            atomnum = self.orbatomnum[orb]
-            center = self.primAtoms[atomnum]
-            exp_term = np.exp(-2j * np.pi * np.dot(gpoints, center))  # not e^-iGR because is complex conjugate
-            test_coeffs = ndimage.map_coordinates(self.centered_recip_orbs[orb].real, gplusk_coords, mode="wrap")
-            test_coeffs = test_coeffs + 1j * ndimage.map_coordinates(self.centered_recip_orbs[orb].imag, gplusk_coords,
-                                                                     mode="wrap")
-            # print("is same?", coeffs, test_coeffs)
-            adjusted_orbs[str(orb)] = test_coeffs * exp_term
-
-        kdep_Sij1 = np.zeros((self.num_orbs, self.num_orbs), dtype=np.complex_)
-        for orb1 in range(self.num_orbs):
-            for orb2 in range(self.num_orbs):
-                new_orbs_multplied = np.conj(adjusted_orbs[str(orb1)]) * adjusted_orbs[str(orb2)]
-                distorb_overlap = reciprocal_integral(new_orbs_multplied, self._a, self.grid)
-                kdep_Sij1[orb1, orb2] = distorb_overlap
-
-        gpoints = self.generate_gpnts(kpt2)
-        num_gpnts = len(gpoints)
-        print("gpts:", num_gpnts)  # , gpoints)
-        g_coords = []
-        for gp in gpoints:
-            t = tuple(gp.astype(np.int_) + (self.grid / 2).astype(np.int_))
-            g_coords.append(t)
-        g_coords = np.array(g_coords)
-        # g_coords = self.g_coords
-        gplusk_coords = g_coords.transpose() + np.array([kpt2]).transpose()
-        adjusted_orbs = {}
-        for orb in range(self.num_orbs):
-            atomnum = self.orbatomnum[orb]
-            center = self.primAtoms[atomnum]
-            exp_term = np.exp(-2j * np.pi * np.dot(gpoints, center))  # not e^-iGR because is complex conjugate
-            test_coeffs = ndimage.map_coordinates(self.centered_recip_orbs[orb].real, gplusk_coords, mode="wrap")
-            test_coeffs = test_coeffs + 1j * ndimage.map_coordinates(self.centered_recip_orbs[orb].imag, gplusk_coords,
-                                                                     mode="wrap")
-            # print("is same?", coeffs, test_coeffs)
-            adjusted_orbs[str(orb)] = test_coeffs * exp_term
-
-        kdep_Sij2 = np.zeros((self.num_orbs, self.num_orbs), dtype=np.complex_)
-        for orb1 in range(self.num_orbs):
-            for orb2 in range(self.num_orbs):
-                new_orbs_multplied = np.conj(adjusted_orbs[str(orb1)]) * adjusted_orbs[str(orb2)]
-                distorb_overlap = reciprocal_integral(new_orbs_multplied, self._a, self.grid)
-                kdep_Sij2[orb1, orb2] = distorb_overlap
-        print("kpt 0:",kdep_Sij1)
-        print("kpt 0.25:", kdep_Sij2)
 
     def real_to_recip(self,real_orbs):
         keys = list(real_orbs.keys())
@@ -421,6 +359,7 @@ class TBModel(object):
 
         if self.orbs_orth == True:
             (eigval, eigvec) = np.linalg.eigh(ham)
+        '''
         else:
             if self.recip==False:
                 expon_term = np.zeros((self.numAtoms, self.grid[0], self.grid[1], self.grid[2]), dtype=np.complex_)
@@ -470,7 +409,7 @@ class TBModel(object):
                             new_orbs_multplied = np.conj(adjusted_orbs[str(orb1)]) * adjusted_orbs[str(orb2)]
                             distorb_overlap = reciprocal_integral(new_orbs_multplied, self._a, self.grid)
                         kdep_Sij[orb1, orb2] = distorb_overlap
-
+            
             eigenvalj, kdep_Dij = np.linalg.eig(kdep_Sij)
             # check correctness of eigen
             # construct Aij
@@ -481,6 +420,7 @@ class TBModel(object):
             conj_Aij = np.conj(kdep_Aij).transpose()
             AtHA = np.matmul(conj_Aij,np.matmul(ham,kdep_Aij))
             (eigval,eigvec) = np.linalg.eigh(AtHA)
+        '''
 
         #print(eigval)
         #print(eigvec[:,19])

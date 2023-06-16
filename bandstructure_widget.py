@@ -81,7 +81,7 @@ class Bandstructure(object):
 
         self.evals = np.array(int_evals).T  #[n,k]
         self.evecs = np.array(int_evecs).transpose((2,0,1))  #[n,k,orb]
-        print("other shapes",self.evals.shape,self.evecs.shape)
+        #print("other shapes",self.evals.shape,self.evecs.shape)
         self.k_vec = k_vec
         self.k_dist = k_dist
         self.k_node = k_node
@@ -138,14 +138,14 @@ class Bandstructure(object):
         value = 0
         # define diff_evals
 
-        print(band, kpoint)
+        #print(band, kpoint)
         diff_evals_vals = []
         diff_evals_keys = []
         orig_tb_params = []
         orbitals = np.arange(0,8)
         eigen_var = copy.deepcopy(self.evecs[band,kpoint,:])
         sig_orbitals = orbitals[abs(eigen_var)>0.1]
-        print("Sig_orbitals", sig_orbitals)
+        #print("Sig_orbitals", sig_orbitals)
         num_trans = self.newModel.num_each_dir
         numT = int(num_trans*2+1)
 
@@ -176,14 +176,14 @@ class Bandstructure(object):
         (Sorb1, Sorb2, Strans1, Strans2, Strans3) = (orb1[sorting_ind], orb2[sorting_ind], trans1[sorting_ind], trans2[sorting_ind], trans3[sorting_ind])
         stSorb1 = np.char.mod('%d', Sorb1)
         stSorb2 = np.char.mod('%d', Sorb2)
-        print("to string?", Sorb1, stSorb1)
+        #print("to string?", Sorb1, stSorb1)
         sorted_keys = np.char.add(stSorb1,stSorb2)
 
         sample_keys = sorted_keys# diff_evals_keys[sorted_sample_indices]
         sorted_sample_val = sortedEnergyCont #sample_val[sorted_sample_indices] # sorted_sample_val but with +/-
         sorted_sample_mag_val = np.abs(sortedEnergyCont)# np.flip(np.sort(abs(sample_val))) # This used to be sorted_sample_val
-        print(sorted_sample_val)
-        print(sample_keys[:20])
+        #print(sorted_sample_val)
+        #print(sample_keys[:20])
         #sample_params = diff_tb_params[sorted_sample_indices]
         #print(sample_params)
         (group_mag_vals, group_vals, bool_diff, count_list, indices) = ([sorted_sample_mag_val[0]], [sorted_sample_val[0]],
@@ -196,7 +196,7 @@ class Bandstructure(object):
                 group_vals.append(sorted_sample_val[i])
                 group_mag_vals.append(sorted_sample_mag_val[i])
             bool_diff.append(diff >= 0.005)
-        print("bool_diff", bool_diff)
+        #print("bool_diff", bool_diff)
         for i in range(0, len(bool_diff) - 1):
             if not bool_diff[i + 1]:
                 count += 1
@@ -231,10 +231,7 @@ class Bandstructure(object):
         first_vec_of_tbparams.append(sort_TBparams[next_ind[-1]:-1].tolist())
         first_vec_of_orbs.append([Sorb1[next_ind[-1]:-1].tolist(),Sorb2[next_ind[-1]:-1].tolist()])
         first_vec_of_trans.append([Strans1[next_ind[-1]:-1].tolist(),Strans2[next_ind[-1]:-1].tolist(),Strans3[next_ind[-1]:-1].tolist()])
-        print("First_vec_of_keys, ",first_vec_of_keys)
-        print(first_vec_of_orbs)
-        print(first_vec_of_trans)
-        print(first_vec_of_tbparams)
+        #print("First_vec_of_keys, ",first_vec_of_keys)
         groups = np.array(groups)
         one_d_vec_of_keys = []
         for arr in first_vec_of_keys:
@@ -244,20 +241,17 @@ class Bandstructure(object):
                     con += elem + ", "
             one_d_vec_of_keys.append(con[0:-2])
         first_vec_keys_1D = np.array(one_d_vec_of_keys)
-        print(first_vec_of_tbparams_uq)
         first_vec_tbparams_1D = np.array(first_vec_of_tbparams_uq,dtype=object)
-        print(first_vec_tbparams_1D)
+        #print(first_vec_tbparams_1D)
 
         #sort based on (energy change * num params) instead of just energy
-        print(np.abs(groups[:,0]))
-        print(first_vec_keys_1D)
+        #print(np.abs(groups[:,0]))
+        #print(first_vec_keys_1D)
         new_sort = np.flip(np.argsort(np.abs(groups[:,0])))
 
-        print("new sorting:",new_sort)
-        print(first_vec_of_orbs)
+        #print("new sorting:",new_sort)
 
         self.groups = np.around(groups[new_sort],decimals=3)
-        print(self.groups)
         self.trans = np.array(first_vec_of_trans,dtype=object)[new_sort]
         self.tbparams = np.array(first_vec_of_tbparams,dtype=object)[new_sort]
         self.orbs = np.array(first_vec_of_orbs,dtype=object)[new_sort]
@@ -269,14 +263,14 @@ class Bandstructure(object):
         return ([self.keys, self.groups, self.tbparams_uq])
 
     def plot_bond_run(self,ax=None,num_bond = 0):
-        print(self.orbs)
+        #print(self.orbs)
         orbs = self.orbs[num_bond]
         trans = self.trans[num_bond]
         tbparams = self.tbparams[num_bond]
         coeffs = self.coeffs
         coeffs[np.abs(coeffs)>0.01] = coeffs[np.abs(coeffs)>0.01]/np.abs(coeffs)[np.abs(coeffs)>0.01]
         phase = np.conj(coeffs[orbs[0][0]])*coeffs[orbs[1][0]]
-        print("phase from coeffs:",phase)
+        #print("phase from coeffs:",phase)
         kx = np.linspace(0,0.5,num=15)
         ky = np.linspace(0, 0.001, num=15)
         kz = np.linspace(0, 0.5, num=15)
@@ -315,11 +309,11 @@ class Bandstructure(object):
         #reassign all TB params with the same value as the one that has been changed
         chang_model = copy.deepcopy(self.newModel)
         chang_hops = copy.deepcopy(self._hoppings)
-        print(old_val)
+        #print(old_val)
         same_hop = np.around(np.abs(chang_hops),decimals=3)==np.around(np.abs(old_val),decimals=3)
-        print(chang_hops[same_hop])
+        #print(chang_hops[same_hop])
         chang_hops[same_hop] = new_val*np.sign(chang_hops[same_hop])
-        print(chang_hops[same_hop])
+        #print(chang_hops[same_hop])
         chang_model.TB_params = chang_hops
 
 
@@ -591,7 +585,7 @@ class Widget(Bandstructure):#, CrystalOrbital):
                     self.table_info[0,count] = i+1 # wannier orbital number
                     self.table_info[1, count] = character[i] # cooresponding orbital character
                     evec_val = evecs[band][kpoint][i]
-                    print(evec_val)
+                    #print(evec_val)
                     self.table_info[2, count] = (evec_val.real**2 + evec_val.imag**2)*100 # percent of orbital at point
                     count = count+1
                     #save for input in getCrystalOrbital
