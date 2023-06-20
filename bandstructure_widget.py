@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-from matplotlib.widgets import TextBox
+from matplotlib.widgets import TextBox,Button
 #import pythtb
 from nonorthTB import TBModel
 import copy
@@ -261,7 +261,11 @@ class Bandstructure(object):
         self.tbparams_uq= first_vec_tbparams_1D[new_sort]
         self.orig_oneTB = np.zeros(6)
         #print(first_vec_tbparams_1D[new_sort].T)
-        for param in range(len(new_sort)):
+        if len(new_sort) < 6:
+            loop_over = range(len(new_sort))
+        else:
+            loop_over = range(6)
+        for param in loop_over:
             uq_params =  first_vec_tbparams_1D[new_sort][param]
             one_value = np.abs(uq_params[0])
             self.orig_oneTB[param] = one_value
@@ -311,19 +315,23 @@ class Bandstructure(object):
         plt.close()
         return ax
 
-    def change_sig_bonds(self,old_val,new_val,tbvals=None,num_bond=None):
+    def change_sig_bonds(self,old_vals,new_vals,tbvals=None,num_bond=None):
         """To change tight-binding parameter, need to know two orbitals and three translations"""
         # if num_bond is set than tbvals need to be a float otherwise it is a list of floats
 
         #reassign all TB params with the same value as the one that has been changed
         chang_model = copy.deepcopy(self.newModel)
         chang_hops = copy.deepcopy(self._hoppings)
-        #print(old_val)
-        same_hop = np.around(np.abs(chang_hops),decimals=3)==np.around(np.abs(old_val),decimals=3)
-        #print(chang_hops[same_hop])
-        chang_hops[same_hop] = new_val*np.sign(chang_hops[same_hop])
-        #print(chang_hops[same_hop])
-        chang_model.TB_params = chang_hops
+
+        for i in range(len(old_vals)):
+            old_val = old_vals[i]
+            new_val = new_vals[i]
+            #print(old_val)
+            same_hop = np.around(np.abs(chang_hops),decimals=3)==np.around(np.abs(old_val),decimals=3)
+            #print(chang_hops[same_hop])
+            chang_hops[same_hop] = new_val*np.sign(chang_hops[same_hop])
+            #print(chang_hops[same_hop])
+            chang_model.TB_params = chang_hops
 
 
         int_evals = []
@@ -453,8 +461,43 @@ class Widget(Bandstructure):#, CrystalOrbital):
         self.ax2_table = fig.add_axes([0.52, 0.8, 0.36, 0.7])
         self.ax2_table.axis('off')
 
+        #make button to recalculate bandstructure
+
+
         #make textboxes stuff
-        self.test_TB = [0,0,0,0,0,0]
+        butt_ax = fig.add_axes([0.88, 0.631, 0.1, 0.021])
+        butt = Button(butt_ax,"calculate!")
+
+        def recalc_bs(val):
+            print("been clicked!",val)
+            hold = [text_box1.text,text_box2.text,text_box3.text,text_box4.text,text_box5.text,text_box6.text]
+            new_vals = np.array([float(i) for i in hold])
+            print(new_vals)
+            old_vals = self.orig_oneTB
+            self.change_sig_bonds(old_vals=old_vals, new_vals=new_vals)
+            self.ax1.clear()
+            self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
+            plt.draw()
+
+        butt.on_clicked(recalc_bs)
+        butt_ax._button = butt
+        axbox = fig.add_axes([0.88, 0.78, 0.1, 0.023])
+        text_box = TextBox(axbox, "","new TB params")
+        axbox1 = fig.add_axes([0.88, 0.757, 0.1, 0.021])
+        text_box1 = TextBox(axbox1, "","")
+        axbox2 = fig.add_axes([0.88, 0.736, 0.1, 0.021])
+        text_box2 = TextBox(axbox2, "","")
+        axbox3 = fig.add_axes([0.88, 0.715, 0.1, 0.021])
+        text_box3 = TextBox(axbox3, "","")
+        axbox4 = fig.add_axes([0.88, 0.694, 0.1, 0.021])
+        text_box4 = TextBox(axbox4, "","")
+        axbox5 = fig.add_axes([0.88, 0.673, 0.1, 0.021])
+        text_box5 = TextBox(axbox5, "","")
+        axbox6 = fig.add_axes([0.88, 0.652, 0.1, 0.021])
+        text_box6 = TextBox(axbox6, "","")
+
+        '''
+        self.test_TB = [0,0,0,0,0,0] #self.orig_oneTB
         def submit1(tbvalue):
             tbvalue = float(tbvalue)
             old_val = self.orig_oneTB[0]
@@ -468,10 +511,6 @@ class Widget(Bandstructure):#, CrystalOrbital):
                 self.ax1.clear()
                 self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
                 plt.draw()
-        axbox = fig.add_axes([0.88, 0.78, 0.1, 0.023])
-        text_box = TextBox(axbox, "","new TB params")
-        axbox1 = fig.add_axes([0.88, 0.757, 0.1, 0.021])
-        text_box1 = TextBox(axbox1, "","")
         text_box1.on_submit(submit1)
         def submit2(tbvalue):
             tbvalue = float(tbvalue)
@@ -486,8 +525,6 @@ class Widget(Bandstructure):#, CrystalOrbital):
                 self.ax1.clear()
                 self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
                 plt.draw()
-        axbox2 = fig.add_axes([0.88, 0.736, 0.1, 0.021])
-        text_box2 = TextBox(axbox2, "","")
         text_box2.on_submit(submit2)
         def submit3(tbvalue):
             tbvalue = float(tbvalue)
@@ -502,8 +539,6 @@ class Widget(Bandstructure):#, CrystalOrbital):
                 self.ax1.clear()
                 self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
                 plt.draw()
-        axbox3 = fig.add_axes([0.88, 0.715, 0.1, 0.021])
-        text_box3 = TextBox(axbox3, "","")
         text_box3.on_submit(submit3)
         def submit4(tbvalue):
             tbvalue = float(tbvalue)
@@ -518,8 +553,6 @@ class Widget(Bandstructure):#, CrystalOrbital):
                 self.ax1.clear()
                 self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
                 plt.draw()
-        axbox4 = fig.add_axes([0.88, 0.694, 0.1, 0.021])
-        text_box4 = TextBox(axbox4, "","")
         text_box4.on_submit(submit4)
         def submit5(tbvalue):
             tbvalue = float(tbvalue)
@@ -534,8 +567,6 @@ class Widget(Bandstructure):#, CrystalOrbital):
                 self.ax1.clear()
                 self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
                 plt.draw()
-        axbox5 = fig.add_axes([0.88, 0.673, 0.1, 0.021])
-        text_box5 = TextBox(axbox5, "","")
         text_box5.on_submit(submit5)
         def submit6(tbvalue):
             tbvalue = float(tbvalue)
@@ -550,10 +581,8 @@ class Widget(Bandstructure):#, CrystalOrbital):
                 self.ax1.clear()
                 self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
                 plt.draw()
-        axbox6 = fig.add_axes([0.88, 0.652, 0.1, 0.021])
-        text_box6 = TextBox(axbox6, "","")
         text_box6.on_submit(submit6)
-
+        '''
         #make info for tables
         #self.ax_table.axis('tight')
         fig.suptitle('Visualize Bandstructure Chemistry',size = 15)
@@ -631,22 +660,24 @@ class Widget(Bandstructure):#, CrystalOrbital):
                     self.table_keygroup.get_celld()[row2 + 1, 1].get_text().set_text('')
                     self.table_keygroup.get_celld()[row2 + 1, 2].get_text().set_text('')
                     self.table_keygroup.get_celld()[row2 + 1, 3].get_text().set_text('')
-                    self.test_TB[row2] = 0
+                    #self.test_TB[row2] = 0
                 else:
                     self.table_keygroup.get_celld()[row2 + 1, 0].get_text().set_text(str(keys_and_groups[0][row2]))
                     self.table_keygroup.get_celld()[row2 + 1, 1].get_text().set_text(str(keys_and_groups[1][row2][0]))
                     self.table_keygroup.get_celld()[row2 + 1, 2].get_text().set_text(str(keys_and_groups[1][row2][1]))
                     self.table_keygroup.get_celld()[row2 + 1, 3].get_text().set_text(str(keys_and_groups[2][row2]))
-                    self.test_TB[row2] = keys_and_groups[2][row2][0]
-            text_box1.set_val(str(abs(self.test_TB[0])))
-            text_box2.set_val(str(abs(self.test_TB[1])))
-            text_box3.set_val(str(abs(self.test_TB[2])))
-            text_box4.set_val(str(abs(self.test_TB[3])))
-            text_box5.set_val(str(abs(self.test_TB[4])))
-            text_box6.set_val(str(abs(self.test_TB[5])))
+                    #self.test_TB[row2] = keys_and_groups[2][row2][0]
+            text_box1.text_disp.set_text(str(abs(self.orig_oneTB[0])))
+            text_box2.text_disp.set_text(str(abs(self.orig_oneTB[1])))
+            text_box3.text_disp.set_text(str(abs(self.orig_oneTB[2])))
+            text_box4.text_disp.set_text(str(abs(self.orig_oneTB[3])))
+            text_box5.text_disp.set_text(str(abs(self.orig_oneTB[4])))
+            text_box6.text_disp.set_text(str(abs(self.orig_oneTB[5])))
             plt.draw()
 
         fig.canvas.mpl_connect('pick_event', onpick3)
+
+        #text_box1._rendercursor()
         #plt.show()
         return fig
 
