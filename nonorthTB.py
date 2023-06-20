@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import pandas as pd
 import math
 import copy
@@ -39,7 +39,6 @@ class TBModel(object):
             orb_redcoords = _cart_to_red((self._a[0], self._a[1], self._a[2]),orb_cartcoords)
         self.orb_redcoords = orb_redcoords
         #print(self.orb_redcoords)
-
 
     def read_TBparams(self,file = "test_hr.dat.txt"):
         #get TB params from a file formatted like wannier90_hr.dat
@@ -426,6 +425,7 @@ class TBModel(object):
         #print(eigvec[:,19])
         return eigval,eigvec
 
+    '''
     def plot_sphOrbitals(self):
         figures = {}
         axises = {}
@@ -456,7 +456,7 @@ class TBModel(object):
             axises[str(orb)].set_xlim()
 
             plt.show()
-
+    '''
     def get_bandstructure(self,return_evals = False,kpoints=None):
         if kpoints == None:
             # get kpath
@@ -486,6 +486,7 @@ class TBModel(object):
         if return_evals == True:
             return eigvals
 
+'''
     def plotBS(self, ax=None, selectedDot=None, plotnew=None):
         """
         :param ax (matplotlib.pyplot axis): axis to save the bandstructure to, otherwise generate new axis
@@ -617,7 +618,7 @@ class TBModel(object):
             ax.plot(range(num_kpts), TBeigvals[:, band] , c='red')
             ax.plot(range(num_kpts), DFTeigvals[:, band] , c='black')
         plt.show()
-
+'''
 
 def periodic_integral_3d(f,prim_vec,n,multiple_wfs=False):
     func = np.array(f).transpose() #3D float array

@@ -258,7 +258,15 @@ class Bandstructure(object):
         self.coeffs = eigen_var #will use this to determine phase of orbitals
         #    print("orbs",self.orbs,"  trans",self.trans)
         self.keys = first_vec_keys_1D[new_sort]
-        self.tbparams_uq = first_vec_tbparams_1D[new_sort]
+        self.tbparams_uq= first_vec_tbparams_1D[new_sort]
+        self.orig_oneTB = np.zeros(6)
+        #print(first_vec_tbparams_1D[new_sort].T)
+        for param in range(len(new_sort)):
+            uq_params =  first_vec_tbparams_1D[new_sort][param]
+            one_value = np.abs(uq_params[0])
+            self.orig_oneTB[param] = one_value
+        #self.orig_oneTB[:len(new_sort)] = first_vec_tbparams_1D[new_sort].T[0].T
+        print("og TB", self.orig_oneTB)
         #self.new_evals = np.around(new_evals, decimals=5)
         return ([self.keys, self.groups, self.tbparams_uq])
 
@@ -275,7 +283,7 @@ class Bandstructure(object):
         ky = np.linspace(0, 0.001, num=15)
         kz = np.linspace(0, 0.5, num=15)
         kpnts = np.array([kx,ky,kz]).T
-        bond_run = np.zeros((15))
+        bond_run = np.zeros((15),dtype=np.complex_)
         for ind,k in enumerate(kpnts):
             for bond in range(len(tbparams)):
                 vec = np.array([1,0,0])*trans[0][bond]+np.array([0,1,0])*trans[1][bond]+np.array([0,0,1])*trans[2][bond]
@@ -284,6 +292,7 @@ class Bandstructure(object):
                 exp_fac = np.exp(-2j * np.pi * np.dot(k, vec))*np.conj(coeffs[orbs[0][bond]])*coeffs[orbs[1][bond]]
                 bond_run[ind] = bond_run[ind] + tbparams[bond]*exp_fac
         bond_run = bond_run/2 # seems like it's twice as large as is should be
+        bond_run = bond_run.real
         xaxis = np.linspace(0,1,num=15)
         # initialize figure and axis
         fig = plt.figure()
@@ -448,16 +457,17 @@ class Widget(Bandstructure):#, CrystalOrbital):
         self.test_TB = [0,0,0,0,0,0]
         def submit1(tbvalue):
             tbvalue = float(tbvalue)
-            old_val = self.tbparams_uq[0][0]
+            old_val = self.orig_oneTB[0]
             new_val = tbvalue
             self.test_TB[0] = tbvalue
-            self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
-            self.ax_bond.clear()
-            self.ax_bond.set_title("Bond run")
-            self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=0)
-            self.ax1.clear()
-            self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
-            plt.draw()
+            if old_val != 0:
+                self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
+                self.ax_bond.clear()
+                self.ax_bond.set_title("Bond run")
+                self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=0)
+                self.ax1.clear()
+                self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
+                plt.draw()
         axbox = fig.add_axes([0.88, 0.78, 0.1, 0.023])
         text_box = TextBox(axbox, "","new TB params")
         axbox1 = fig.add_axes([0.88, 0.757, 0.1, 0.021])
@@ -465,76 +475,81 @@ class Widget(Bandstructure):#, CrystalOrbital):
         text_box1.on_submit(submit1)
         def submit2(tbvalue):
             tbvalue = float(tbvalue)
-            old_val = self.tbparams_uq[1][0]
+            old_val = self.orig_oneTB[1]
             new_val = tbvalue
             self.test_TB[1] = tbvalue
-            self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
-            self.ax_bond.clear()
-            self.ax_bond.set_title("Bond run")
-            self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=1)
-            self.ax1.clear()
-            self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
-            plt.draw()
+            if old_val != 0:
+                self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
+                self.ax_bond.clear()
+                self.ax_bond.set_title("Bond run")
+                self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=1)
+                self.ax1.clear()
+                self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
+                plt.draw()
         axbox2 = fig.add_axes([0.88, 0.736, 0.1, 0.021])
         text_box2 = TextBox(axbox2, "","")
         text_box2.on_submit(submit2)
         def submit3(tbvalue):
             tbvalue = float(tbvalue)
-            old_val = self.tbparams_uq[2][0]
+            old_val = self.orig_oneTB[2]
             new_val = tbvalue
             self.test_TB[2] = tbvalue
-            self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
-            self.ax_bond.clear()
-            self.ax_bond.set_title("Bond run")
-            self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=2)
-            self.ax1.clear()
-            self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
-            plt.draw()
+            if old_val != 0:
+                self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
+                self.ax_bond.clear()
+                self.ax_bond.set_title("Bond run")
+                self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=2)
+                self.ax1.clear()
+                self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
+                plt.draw()
         axbox3 = fig.add_axes([0.88, 0.715, 0.1, 0.021])
         text_box3 = TextBox(axbox3, "","")
         text_box3.on_submit(submit3)
         def submit4(tbvalue):
             tbvalue = float(tbvalue)
-            old_val = self.tbparams_uq[3][0]
+            old_val = self.orig_oneTB[3]
             new_val = tbvalue
             self.test_TB[3] = tbvalue
-            self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
-            self.ax_bond.clear()
-            self.ax_bond.set_title("Bond run")
-            self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=3)
-            self.ax1.clear()
-            self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
-            plt.draw()
+            if old_val != 0:
+                self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
+                self.ax_bond.clear()
+                self.ax_bond.set_title("Bond run")
+                self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=3)
+                self.ax1.clear()
+                self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
+                plt.draw()
         axbox4 = fig.add_axes([0.88, 0.694, 0.1, 0.021])
         text_box4 = TextBox(axbox4, "","")
         text_box4.on_submit(submit4)
         def submit5(tbvalue):
             tbvalue = float(tbvalue)
-            old_val = self.tbparams_uq[4][0]
+            old_val = self.orig_oneTB[4]
             new_val = tbvalue
             self.test_TB[4] = tbvalue
-            self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
-            self.ax_bond.clear()
-            self.ax_bond.set_title("Bond run")
-            self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=4)
-            self.ax1.clear()
-            self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
-            plt.draw()
+            if old_val != 0:
+                self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
+                self.ax_bond.clear()
+                self.ax_bond.set_title("Bond run")
+                self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=4)
+                self.ax1.clear()
+                self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
+                plt.draw()
         axbox5 = fig.add_axes([0.88, 0.673, 0.1, 0.021])
         text_box5 = TextBox(axbox5, "","")
         text_box5.on_submit(submit5)
         def submit6(tbvalue):
             tbvalue = float(tbvalue)
-            old_val = self.tbparams_uq[5][0]
+            old_val = self.orig_oneTB[5]
             new_val = tbvalue
             self.test_TB[5] = tbvalue
-            self.change_sig_bonds(tbvals = self.test_TB)
-            self.ax_bond.clear()
-            self.ax_bond.set_title("Bond run")
-            self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=5)
-            self.ax1.clear()
-            self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
-            plt.draw()
+            if old_val != 0:
+                self.change_sig_bonds(old_val = old_val,new_val=new_val)#tbvals = self.test_TB)
+                self.ax_bond.clear()
+                self.ax_bond.set_title("Bond run")
+                self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=5)
+                self.ax1.clear()
+                self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
+                plt.draw()
         axbox6 = fig.add_axes([0.88, 0.652, 0.1, 0.021])
         text_box6 = TextBox(axbox6, "","")
         text_box6.on_submit(submit6)
