@@ -88,7 +88,7 @@ class Bandstructure(object):
         self.k_label = k_label
         print('intialized Bandstructure')
 
-    def plotBS(self, ax=None, selectedDot=None, plotnew=None):
+    def plotBS(self, ax=None, selectedDot=None, plotnew=False):
         """
         :param ax (matplotlib.pyplot axis): axis to save the bandstructure to, otherwise generate new axis
         :param selectedDot (1D integer array): gives kpoint and band index of the dot selected to make green circle
