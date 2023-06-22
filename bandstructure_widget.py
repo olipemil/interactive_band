@@ -1,7 +1,7 @@
 
 import numpy as np
-import matplotlib
-matplotlib.use("TkAgg")
+#import matplotlib
+#matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from matplotlib.widgets import TextBox,Button, RadioButtons
@@ -178,8 +178,8 @@ class Bandstructure(object):
         sortedEnergyCont = energyCont[sorting_ind]
         sort_TBparams = TBparams[sorting_ind]
         (Sorb1, Sorb2, Strans1, Strans2, Strans3) = (orb1[sorting_ind], orb2[sorting_ind], trans1[sorting_ind], trans2[sorting_ind], trans3[sorting_ind])
-        stSorb1 = np.char.mod('%d', Sorb1)
-        stSorb2 = np.char.mod('%d', Sorb2)
+        stSorb1 = np.char.mod('%d', Sorb1+1)
+        stSorb2 = np.char.mod('%d', Sorb2+1)
         #print("to string?", Sorb1, stSorb1)
         sorted_keys = np.char.add(stSorb1,stSorb2)
 
