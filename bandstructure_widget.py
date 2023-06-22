@@ -164,8 +164,8 @@ class Bandstructure(object):
         energyCont = energyCont.flatten()
         orb1,orb2,trans1,trans2,trans3 = np.mgrid[0:self.numOrbs,0:self.numOrbs,-num_trans:num_trans+1,-num_trans:num_trans+1,-num_trans:num_trans+1]
         (orb1, orb2, trans1, trans2, trans3) = (orb1.flatten(), orb2.flatten(), trans1.flatten(), trans2.flatten(), trans3.flatten())
-        large_TB = np.abs(energyCont.real)>0.01
-        energyCont = np.around(energyCont[large_TB].real,decimals=4)
+        large_TB = np.abs(energyCont.real)>0.005
+        energyCont = np.around(energyCont[large_TB].real,decimals=5)
         TBparams = TBparams[large_TB]
         (orb1, orb2, trans1, trans2, trans3) = (orb1[large_TB], orb2[large_TB], trans1[large_TB], trans2[large_TB], trans3[large_TB])
         onsite_term = [(orb1==orb2) & (trans1==0) & (trans2==0) & (trans3==0)]
@@ -461,7 +461,7 @@ class Widget(Bandstructure):#, CrystalOrbital):
         self.text_ax.text(0.665,0.815,"Important bonds",size=12)
         self.text_ax.text(0.38,0.93,"Wavefunction orbital character",size=12)
         self.ax1 = fig.add_axes([0.1,0.15,0.4,0.65])#add_subplot(131)
-        self.ax_bond = fig.add_axes([0.55,0.15,0.4,0.4],animated=True)
+        self.ax_bond = fig.add_axes([0.55,0.15,0.4,0.4])#,animated=True)
         self.ax_bond.set_title("Bond run")
         self.ax_bond.set_ylim(-5, 5)
         #intialize table of coefficients
