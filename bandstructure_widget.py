@@ -196,10 +196,10 @@ class Bandstructure(object):
         groups = []
         for i in range(1, np.size(sorted_sample_mag_val)):
             diff = abs(sorted_sample_val[i].real - sorted_sample_val[i - 1].real)
-            if not diff < 0.005:
+            if not diff < 0.001:
                 group_vals.append(sorted_sample_val[i])
                 group_mag_vals.append(sorted_sample_mag_val[i])
-            bool_diff.append(diff >= 0.005)
+            bool_diff.append(diff >= 0.001)
         #print("bool_diff", bool_diff)
         for i in range(0, len(bool_diff) - 1):
             if not bool_diff[i + 1]:
@@ -491,10 +491,10 @@ class Widget(Bandstructure):#, CrystalOrbital):
 
 
         rad_butt_ax = fig.add_axes([0.88, 0.482, 0.1, 0.126])
-        rad_butt = RadioButtons(rad_butt_ax,('1','2','3','4','5','6'))
+        rad_butt = RadioButtons(rad_butt_ax,('Bond 1','Bond 2','Bond 3','Bond 4','Bond 5','Bond 6'))
 
         def get_bondrun(label):
-            bondind = int(label)-1
+            bondind = int(label.split()[1])-1
             self.ax_bond.clear()
             self.ax_bond.set_title("Bond run")
             self.ax_bond = self.plot_bond_run(ax=self.ax_bond, num_bond=bondind)
