@@ -1,8 +1,10 @@
 
 import numpy as np
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-from matplotlib.widgets import TextBox,Button
+from matplotlib.widgets import TextBox,Button, RadioButtons
 #import pythtb
 from nonorthTB import TBModel
 import copy
@@ -85,6 +87,8 @@ class Bandstructure(object):
         self.k_vec = k_vec
         self.k_dist = k_dist
         self.k_node = k_node
+        self.kpath = kpath
+        print("knode:",k_node/k_dist[-1]*len(k_dist))
         self.k_label = k_label
         print('intialized Bandstructure')
 
@@ -280,12 +284,14 @@ class Bandstructure(object):
         trans = self.trans[num_bond]
         tbparams = self.tbparams[num_bond]
         coeffs = self.coeffs
-        coeffs[np.abs(coeffs)>0.01] = coeffs[np.abs(coeffs)>0.01]/np.abs(coeffs)[np.abs(coeffs)>0.01]
+        coeffs[np.abs(coeffs)>0.001] = coeffs[np.abs(coeffs)>0.001]/np.abs(coeffs)[np.abs(coeffs)>0.001]
         phase = np.conj(coeffs[orbs[0][0]])*coeffs[orbs[1][0]]
         #print("phase from coeffs:",phase)
-        kx = np.linspace(0,0.5,num=15)
-        ky = np.linspace(0, 0.001, num=15)
-        kz = np.linspace(0, 0.5, num=15)
+        k_left = self.close_kvecs[0]
+        k_right = self.close_kvecs[1]
+        kx = np.linspace(k_left[0],k_right[0],num=15)
+        ky = np.linspace(k_left[1],k_right[1], num=15)
+        kz = np.linspace(k_left[2],k_right[2], num=15)
         kpnts = np.array([kx,ky,kz]).T
         bond_run = np.zeros((15),dtype=np.complex_)
         for ind,k in enumerate(kpnts):
@@ -298,6 +304,7 @@ class Bandstructure(object):
         bond_run = bond_run/2 # seems like it's twice as large as is should be
         bond_run = bond_run.real
         xaxis = np.linspace(0,1,num=15)
+        #bond run should have one consistant phase
         # initialize figure and axis
         fig = plt.figure()
         if ax == None:
@@ -312,6 +319,8 @@ class Bandstructure(object):
         if (bond_run<-2).any():
             min = np.amin(bond_run) - 1
         ax.set_ylim(min, max)
+        ax.set_xticks([0,1])
+        ax.set_xticklabels(self.close_labels)
         plt.close()
         return ax
 
@@ -452,7 +461,7 @@ class Widget(Bandstructure):#, CrystalOrbital):
         self.text_ax.text(0.665,0.815,"Important bonds",size=12)
         self.text_ax.text(0.38,0.93,"Wavefunction orbital character",size=12)
         self.ax1 = fig.add_axes([0.1,0.15,0.4,0.65])#add_subplot(131)
-        self.ax_bond = fig.add_axes([0.55,0.15,0.4,0.45])
+        self.ax_bond = fig.add_axes([0.55,0.15,0.4,0.4],animated=True)
         self.ax_bond.set_title("Bond run")
         self.ax_bond.set_ylim(-5, 5)
         #intialize table of coefficients
@@ -460,11 +469,9 @@ class Widget(Bandstructure):#, CrystalOrbital):
         self.ax_table.axis('off')
         self.ax2_table = fig.add_axes([0.52, 0.8, 0.36, 0.7])
         self.ax2_table.axis('off')
+        bondind = 0
 
         #make button to recalculate bandstructure
-
-
-        #make textboxes stuff
         butt_ax = fig.add_axes([0.88, 0.631, 0.1, 0.021])
         butt = Button(butt_ax,"calculate!")
 
@@ -477,10 +484,26 @@ class Widget(Bandstructure):#, CrystalOrbital):
             self.change_sig_bonds(old_vals=old_vals, new_vals=new_vals)
             self.ax1.clear()
             self.ax1 = self.plotBS(ax=self.ax1,selectedDot=self.selectedDot,plotnew=True)
-            plt.draw()
+            fig.canvas.draw()#plt.draw()
 
         butt.on_clicked(recalc_bs)
         butt_ax._button = butt
+
+
+        rad_butt_ax = fig.add_axes([0.88, 0.482, 0.1, 0.126])
+        rad_butt = RadioButtons(rad_butt_ax,('1','2','3','4','5','6'))
+
+        def get_bondrun(label):
+            bondind = int(label)-1
+            self.ax_bond.clear()
+            self.ax_bond.set_title("Bond run")
+            self.ax_bond = self.plot_bond_run(ax=self.ax_bond, num_bond=bondind)
+            fig.canvas.draw()
+
+        rad_butt.on_clicked(get_bondrun)
+        rad_butt_ax._button = rad_butt
+
+        #make textboxes stuff
         axbox = fig.add_axes([0.88, 0.78, 0.1, 0.023])
         text_box = TextBox(axbox, "","new TB params")
         axbox1 = fig.add_axes([0.88, 0.757, 0.1, 0.021])
@@ -607,6 +630,26 @@ class Widget(Bandstructure):#, CrystalOrbital):
         def onpick3(event):
             thisline = event.artist
             kpoint = event.ind[0]
+            #get closest high sym points
+            node_inds = self.k_node
+            dis_ind = node_inds - self.k_dist[kpoint]
+            print(dis_ind)
+            neg_ind = copy.deepcopy(dis_ind)
+            pos_ind = copy.deepcopy(dis_ind)
+            print(neg_ind<0)
+            neg_ind[neg_ind>=0] = 1
+            pos_ind[pos_ind<0] = 1
+            print(neg_ind)
+            print(pos_ind)
+            ind_right = np.argmin(pos_ind)
+            ind_left = np.argmin(abs(neg_ind))
+            #close_nodes = np.argsort(dis_ind)[:2]
+            #close_nodes = close_nodes[np.argsort(node_inds[close_nodes])]
+            closest_labels = [self.k_label[ind_left],self.k_label[ind_right]]#np.array(self.k_label)[close_nodes[:2]]
+            closest_kvecs = [self.kpath[ind_left],self.kpath[ind_right]] #np.array(self.kpath)[close_nodes[:2]]
+            self.close_labels = closest_labels
+            self.close_kvecs = closest_kvecs
+            print("closest high sym:",closest_labels,closest_kvecs)
             band = int(thisline.get_label())
             wanOrbs = []
             combo = []
@@ -651,7 +694,7 @@ class Widget(Bandstructure):#, CrystalOrbital):
             #self.change_sig_bonds(tbvals=0.3,num_bond=0)
             self.ax_bond.clear()
             self.ax_bond.set_title("Bond run")
-            self.ax_bond = self.plot_bond_run(ax=self.ax_bond)
+            #self.ax_bond = self.plot_bond_run(ax=self.ax_bond,num_bond=bondind)
             self.selectedDot = [kpoint,band]
             self.ax1 = self.plotBS(ax=self.ax1,selectedDot=[kpoint,band])
             for row2 in range(0, 6):
@@ -673,7 +716,7 @@ class Widget(Bandstructure):#, CrystalOrbital):
             text_box4.text_disp.set_text(str(abs(self.orig_oneTB[3])))
             text_box5.text_disp.set_text(str(abs(self.orig_oneTB[4])))
             text_box6.text_disp.set_text(str(abs(self.orig_oneTB[5])))
-            plt.draw()
+            fig.canvas.draw()#plt.draw()
 
         fig.canvas.mpl_connect('pick_event', onpick3)
 
