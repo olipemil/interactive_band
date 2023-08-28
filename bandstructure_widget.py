@@ -67,7 +67,7 @@ class Bandstructure(object):
         latticev = [self._a1,self._a2,self._a3]
         atoms = self.elements
         atom_coords = self.atom_primpos
-        self.newModel = TBModel(wannierDir + "/", latticev, atoms, atom_coords, orbs_orth=True,min_hopping_dist=4.)
+        self.newModel = TBModel(wannierDir + "/", latticev, atoms, atom_coords, orbs_orth=True,min_hopping_dist=4)#13.62)
         file = "wannier90_hr.dat"
         self.newModel.read_TBparams(file)
         self._hoppings = copy.deepcopy(self.newModel.TB_params)
@@ -112,6 +112,7 @@ class Bandstructure(object):
         #plot the bands, i loops over each band
         for i in range(self.evals.shape[0]):
             ax.plot(self.k_dist, self.evals[i] - fermi_energy, c='gray', picker=True, label=str(i), linewidth=3)
+        for i in range(self.evals.shape[0]):
             if plotnew == True:
                 ax.plot(self.k_dist, self.new_evals[i] - fermi_energy, c='red', picker=True, label=str(i), linewidth=3)
             #k_dist and evals[i] are 1D arrays of equal length
@@ -132,7 +133,7 @@ class Bandstructure(object):
         ax.set_xlim(self.k_dist[0], self.k_dist[-1])
         ax.set_xticks(self.k_node)
         ax.set_xticklabels(self.k_label)  # ,fontsize=20)
-        ax.set_ylim(-13, 10)
+        ax.set_ylim(-5, 5)
         #fig.tight_layout()
         plt.close()
         #plt.show()
@@ -147,6 +148,7 @@ class Bandstructure(object):
         diff_evals_keys = []
         orig_tb_params = []
         orbitals = np.arange(0,8)
+        self.selected_band = band
         eigen_var = copy.deepcopy(self.evecs[band,kpoint,:])
         sig_orbitals = orbitals[abs(eigen_var)>0.1]
         #print("Sig_orbitals", sig_orbitals)
@@ -165,7 +167,7 @@ class Bandstructure(object):
         orb1,orb2,trans1,trans2,trans3 = np.mgrid[0:self.numOrbs,0:self.numOrbs,-num_trans:num_trans+1,-num_trans:num_trans+1,-num_trans:num_trans+1]
         (orb1, orb2, trans1, trans2, trans3) = (orb1.flatten(), orb2.flatten(), trans1.flatten(), trans2.flatten(), trans3.flatten())
         large_TB = np.abs(energyCont.real)>0.005
-        energyCont = np.around(energyCont[large_TB].real,decimals=5)
+        energyCont = np.around(energyCont[large_TB],decimals=6)
         TBparams = TBparams[large_TB]
         (orb1, orb2, trans1, trans2, trans3) = (orb1[large_TB], orb2[large_TB], trans1[large_TB], trans2[large_TB], trans3[large_TB])
         onsite_term = [(orb1==orb2) & (trans1==0) & (trans2==0) & (trans3==0)]
@@ -185,7 +187,7 @@ class Bandstructure(object):
 
         sample_keys = sorted_keys# diff_evals_keys[sorted_sample_indices]
         sorted_sample_val = sortedEnergyCont #sample_val[sorted_sample_indices] # sorted_sample_val but with +/-
-        sorted_sample_mag_val = np.abs(sortedEnergyCont)# np.flip(np.sort(abs(sample_val))) # This used to be sorted_sample_val
+        sorted_sample_mag_val = np.abs(sortedEnergyCont.real)# np.flip(np.sort(abs(sample_val))) # This used to be sorted_sample_val
         #print(sorted_sample_val)
         #print(sample_keys[:20])
         #sample_params = diff_tb_params[sorted_sample_indices]
@@ -195,11 +197,15 @@ class Bandstructure(object):
         count = 1
         groups = []
         for i in range(1, np.size(sorted_sample_mag_val)):
-            diff = abs(sorted_sample_val[i].real - sorted_sample_val[i - 1].real)
-            if not diff < 0.001:
+            #check that the parameters have the same magnitude of real energy and TB params are the same
+            energy_diff = abs(abs(sorted_sample_val[i].real) - abs(sorted_sample_val[i - 1].real))
+            tbval_diff = abs(abs(sort_TBparams[i])-abs(sort_TBparams[i-1]))
+            same_bond_set = energy_diff < 0.004 and tbval_diff < 0.001
+            #print("check params:",i,sorted_sample_val[i].real,sorted_sample_val[i - 1].real,sorted_sample_val[i].imag,sorted_sample_val[i - 1].imag,tbval_diff,same_bond_set)
+            if not same_bond_set:
                 group_vals.append(sorted_sample_val[i])
                 group_mag_vals.append(sorted_sample_mag_val[i])
-            bool_diff.append(diff >= 0.001)
+            bool_diff.append(not same_bond_set)
         #print("bool_diff", bool_diff)
         for i in range(0, len(bool_diff) - 1):
             if not bool_diff[i + 1]:
@@ -208,8 +214,12 @@ class Bandstructure(object):
                 count_list.append(count)
                 count = 1
         count_list.append(count)
+
+        #will recalculate groups later cause this is no longer correct
         for n in range(len(group_vals)):
             groups.append((group_vals[n]*count_list[n], count_list[n]))
+
+
         for index in range(0, np.size(sorted_sample_mag_val)):
             if sorted_sample_mag_val[index] in group_mag_vals:
                 indices.append(index)
@@ -223,20 +233,24 @@ class Bandstructure(object):
         first_vec_of_trans = []
         first_vec_of_tbparams_uq = []
         first_vec_of_tbparams = []
+        new_groups = []
         for i in range(len(next_ind)-1):
             first_vec_of_keys.append(np.unique(sample_keys[next_ind[i]:next_ind[i+1]]))
             first_vec_of_tbparams_uq.append(np.unique(np.around(sort_TBparams[next_ind[i]:next_ind[i + 1]].real,decimals=3)).tolist())
             first_vec_of_tbparams.append(sort_TBparams[next_ind[i]:next_ind[i + 1]].tolist())
             first_vec_of_orbs.append([Sorb1[next_ind[i]:next_ind[i + 1]].tolist(),Sorb2[next_ind[i]:next_ind[i + 1]].tolist()])
             first_vec_of_trans.append([Strans1[next_ind[i]:next_ind[i + 1]].tolist(),Strans2[next_ind[i]:next_ind[i + 1]].tolist(),Strans3[next_ind[i]:next_ind[i + 1]].tolist()])
+            new_groups.append((np.sum(sorted_sample_val[next_ind[i]:next_ind[i+1]]),groups[i][1]))
         # don't forget to append the last element
-        first_vec_of_keys.append(np.unique(sample_keys[next_ind[-1]:-1]))
-        first_vec_of_tbparams_uq.append(np.unique(np.around(sort_TBparams[next_ind[-1]:-1].real,decimals=3)).tolist())
-        first_vec_of_tbparams.append(sort_TBparams[next_ind[-1]:-1].tolist())
-        first_vec_of_orbs.append([Sorb1[next_ind[-1]:-1].tolist(),Sorb2[next_ind[-1]:-1].tolist()])
-        first_vec_of_trans.append([Strans1[next_ind[-1]:-1].tolist(),Strans2[next_ind[-1]:-1].tolist(),Strans3[next_ind[-1]:-1].tolist()])
+        first_vec_of_keys.append(np.unique(sample_keys[next_ind[-1]:]))
+        first_vec_of_tbparams_uq.append(np.unique(np.around(sort_TBparams[next_ind[-1]:].real,decimals=3)).tolist())
+        first_vec_of_tbparams.append(sort_TBparams[next_ind[-1]:].tolist())
+        first_vec_of_orbs.append([Sorb1[next_ind[-1]:].tolist(),Sorb2[next_ind[-1]:].tolist()])
+        first_vec_of_trans.append([Strans1[next_ind[-1]:].tolist(),Strans2[next_ind[-1]:].tolist(),Strans3[next_ind[-1]:].tolist()])
+        new_groups.append((np.sum(sorted_sample_val[next_ind[-1]:]), groups[-1][1]))
+        groups = np.array(new_groups).real
         #print("First_vec_of_keys, ",first_vec_of_keys)
-        groups = np.array(groups)
+
         one_d_vec_of_keys = []
         for arr in first_vec_of_keys:
             con = ''
@@ -283,27 +297,63 @@ class Bandstructure(object):
         orbs = self.orbs[num_bond]
         trans = self.trans[num_bond]
         tbparams = self.tbparams[num_bond]
-        coeffs = self.coeffs
-        coeffs[np.abs(coeffs)>0.001] = coeffs[np.abs(coeffs)>0.001]/np.abs(coeffs)[np.abs(coeffs)>0.001]
-        phase = np.conj(coeffs[orbs[0][0]])*coeffs[orbs[1][0]]
+        #coeffs = self.coeffs
+        #coeffs[np.abs(coeffs)>0.001] = coeffs[np.abs(coeffs)>0.001]/np.abs(coeffs)[np.abs(coeffs)>0.001]
+        #phase = np.conj(coeffs[orbs[0][0]])*coeffs[orbs[1][0]]
         #print("phase from coeffs:",phase)
-        k_left = self.close_kvecs[0]
-        k_right = self.close_kvecs[1]
-        kx = np.linspace(k_left[0],k_right[0],num=15)
-        ky = np.linspace(k_left[1],k_right[1], num=15)
-        kz = np.linspace(k_left[2],k_right[2], num=15)
-        kpnts = np.array([kx,ky,kz]).T
-        bond_run = np.zeros((15),dtype=np.complex_)
+        ind_l = self.close_kinds[0]
+        ind_r = self.close_kinds[1]
+        print(ind_l,ind_r)
+        kpnts = self.k_vec[ind_l:ind_r]
+        eig_vecs = self.evecs[self.selected_band, ind_l:ind_r]  # [band,kpt,orbs] --> [kpnts,orbs]
+
+        # actually only use single point values if band is degenerate
+        cur_band = self.selected_band
+        ind_betwn = int((ind_l + ind_r)/2)
+        if cur_band == 0 :
+            same_below = False
+        else:
+            same_below = abs(self.evals[cur_band, ind_betwn] - self.evals[cur_band - 1, ind_betwn]) < 0.001
+        if cur_band == self.numOrbs-1:
+            same_above = False
+        else:
+            same_above = abs(self.evals[cur_band,ind_betwn]-self.evals[cur_band+1,ind_betwn])<0.001
+        if same_above or same_below:
+            print("warning: bands are degenerate so only using the coefficients of selecting point for bond run")
+            eig_vecs[:,:] = self.coeffs
+        num_kpts = len(kpnts)
+        #print(kpnts)
+        #print(num_kpts)
+        #k_left = self.close_kvecs[0]
+        #k_right = self.close_kvecs[1]
+        #kx = np.linspace(k_left[0],k_right[0],num=15)
+        #ky = np.linspace(k_left[1],k_right[1], num=15)
+        #kz = np.linspace(k_left[2],k_right[2], num=15)
+        #kpnts = np.array([kx,ky,kz]).T
+        bond_run = np.zeros((num_kpts),dtype=np.complex_)
+        bond_energy = np.zeros((num_kpts),dtype=np.complex_)
+        coeffs_mag = []
         for ind,k in enumerate(kpnts):
+            #get and normalize eigvecs but keep phase
+            coeffs = eig_vecs[ind]
+            #coeffs[np.abs(coeffs) > 0.00001] = coeffs[np.abs(coeffs) > 0.00001] / np.abs(coeffs)[np.abs(coeffs) > 0.00001]
             for bond in range(len(tbparams)):
                 vec = np.array([1,0,0])*trans[0][bond]+np.array([0,1,0])*trans[1][bond]+np.array([0,0,1])*trans[2][bond]
                 vec = vec + self.orb_redcoords[orbs[1][bond]] - self.orb_redcoords[orbs[0][bond]]
                 #print("check vec",vec)
-                exp_fac = np.exp(-2j * np.pi * np.dot(k, vec))*np.conj(coeffs[orbs[0][bond]])*coeffs[orbs[1][bond]]
+                coeff_mag = np.abs(coeffs[orbs[0][bond]]+0.000000001)*np.abs(coeffs[orbs[1][bond]]+0.000000001)
+                #print(ind,coeff_mag)
+                phase_scale = np.conj(coeffs[orbs[0][bond]])*coeffs[orbs[1][bond]]/coeff_mag
+                exp_fac = np.exp(-2j * np.pi * np.dot(k, vec))*phase_scale#*np.conj(coeffs[orbs[0][bond]])*coeffs[orbs[1][bond]]
+                #print(np.exp(-2j * np.pi * np.dot(k, vec)),exp_fac)
                 bond_run[ind] = bond_run[ind] + tbparams[bond]*exp_fac
-        bond_run = bond_run/2 # seems like it's twice as large as is should be
+                bond_energy[ind] = bond_energy[ind] + tbparams[bond]*exp_fac*coeff_mag
+            coeffs_mag.append(coeff_mag)
+        coeffs_mag = np.array(coeffs_mag)
+        bond_run = bond_run #/2# seems like it's twice as large as is should be
+        #print("should be zero:",bond_run.imag)
         bond_run = bond_run.real
-        xaxis = np.linspace(0,1,num=15)
+        xaxis = np.linspace(0,1,num=num_kpts)
         #bond run should have one consistant phase
         # initialize figure and axis
         fig = plt.figure()
@@ -311,13 +361,16 @@ class Bandstructure(object):
             ax = fig.add_subplot(111)
         else:
             ax = ax
-        ax.plot(xaxis,bond_run)
+        ax.plot(xaxis,bond_run/2) #divide by 2 because maximum presence would be if orbitals were perfectly split between orb 1 and orb 2 (or 1/√2 * 1/√2)
+        if not (same_above or same_below):
+            #bond_energy = bond_run * coeffs_mag
+            ax.plot(xaxis, bond_energy,color="pink")
         max = 2
         min = -2
         if (bond_run>2).any():
-            max = np.amax(bond_run) + 1
+            max = np.amax(bond_run/2) + 1
         if (bond_run<-2).any():
-            min = np.amin(bond_run) - 1
+            min = np.amin(bond_run/2) - 1
         ax.set_ylim(min, max)
         ax.set_xticks([0,1])
         ax.set_xticklabels(self.close_labels)
@@ -337,7 +390,7 @@ class Bandstructure(object):
             new_val = new_vals[i]
             #print(old_val)
             same_hop = np.around(np.abs(chang_hops),decimals=3)==np.around(np.abs(old_val),decimals=3)
-            #print(chang_hops[same_hop])
+            print(chang_hops[same_hop])
             chang_hops[same_hop] = new_val*np.sign(chang_hops[same_hop])
             #print(chang_hops[same_hop])
             chang_model.TB_params = chang_hops
@@ -609,7 +662,12 @@ class Widget(Bandstructure):#, CrystalOrbital):
         #make info for tables
         #self.ax_table.axis('tight')
         fig.suptitle('Visualize Bandstructure Chemistry',size = 15)
-        self.ax1 = self.plotBS(ax=self.ax1)
+        #just plot changed vals
+        #self.change_sig_bonds((1.075,1.639,0.126,1.130),(1.075*0.85,1.639*0.85,0.126*1.3,1.130*1.3))
+        #actual Ge hopping parameters
+        #self.change_sig_bonds((1.075, 1.639, 0.126, 1.130,7.089), (1.035, 1.403, 0.155, 1.150,7.889))
+        self.ax1 = self.plotBS(ax=self.ax1)#,plotnew=True)
+
         rows = ['Wannier Orbital', 'Orbital Type', '% coefficient']
         self.table_info = np.array([['     ', '', '','', '','', '',''], ['', '', '','', '','', '',''], ['', '', '','', '','', '','']])
         self.table2_info = np.array([['        ','','',''],['','','',''],['','','',''],['','','',''],['','','',''],['','','','']])
@@ -646,10 +704,18 @@ class Widget(Bandstructure):#, CrystalOrbital):
             #close_nodes = np.argsort(dis_ind)[:2]
             #close_nodes = close_nodes[np.argsort(node_inds[close_nodes])]
             closest_labels = [self.k_label[ind_left],self.k_label[ind_right]]#np.array(self.k_label)[close_nodes[:2]]
+            if closest_labels[0]==closest_labels[1]:
+                ind_right = ind_right + 1
+                closest_labels[1] = self.k_label[ind_right]
             closest_kvecs = [self.kpath[ind_left],self.kpath[ind_right]] #np.array(self.kpath)[close_nodes[:2]]
             self.close_labels = closest_labels
             self.close_kvecs = closest_kvecs
-            print("closest high sym:",closest_labels,closest_kvecs)
+            [dist_left,dist_right] = [self.k_node[ind_left],self.k_node[ind_right]]
+            k_ind = np.arange(len(self.k_dist))
+            kind_l = np.abs(self.k_dist - dist_left).argmin()
+            kind_r = np.abs(self.k_dist - dist_right).argmin()
+            self.close_kinds = [kind_l,kind_r]
+            print("closest high sym:",closest_labels,closest_kvecs,kind_l,kind_r)
             band = int(thisline.get_label())
             wanOrbs = []
             combo = []
@@ -719,10 +785,12 @@ class Widget(Bandstructure):#, CrystalOrbital):
             fig.canvas.draw()#plt.draw()
 
         fig.canvas.mpl_connect('pick_event', onpick3)
-
         #text_box1._rendercursor()
         #plt.show()
         return fig
+
+    def plot_hopping(self):
+        self.newModel.plot_hopping()
 
 def _cart_to_red(tmp,cart):
     "Convert cartesian vectors cart to reduced coordinates of a1,a2,a3 vectors"

@@ -50,7 +50,8 @@ class TBModel(object):
         self.num_orbs = num_orbs
         print("number of orbitals:",num_orbs)
         if self.orbs_orth == True:
-            first_line = 100 #3+num_orbs #12
+            wk_pnts = int(filelines[2])
+            first_line = 3 + math.ceil(wk_pnts/15) #100 #3+num_orbs #12
         else:
             first_line = 3+num_orbs
             self.aeorb_overlap = np.zeros((num_orbs, num_orbs),dtype=np.complex_)
@@ -63,7 +64,7 @@ class TBModel(object):
         last_line = len(filelines)
         #print(filelines[first_line])
         count = 0
-        num_each_dir = 1# abs(int(filelines[first_line].split()[0]))
+        num_each_dir = 5# abs(int(filelines[first_line].split()[0]))
         self.num_each_dir = num_each_dir
         num_trans = num_each_dir*2+1
         self.num_trans = num_trans
@@ -97,6 +98,8 @@ class TBModel(object):
                 #if (same_atom < 0.001).all() and (trans1==0 and trans2==0 and trans3==0) and orb1!=orb2:
                     #print("set to zero!", same_atom)
                     #TB_params[orb1,orb2,trans1,trans2,trans3] = 0
+            else:
+                print("didn't include all hoppings",info)
         self.TB_params = TB_params
         #print(info)
         #print(float(info[5]))
