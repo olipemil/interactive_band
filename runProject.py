@@ -15,6 +15,3 @@ numWanSi = 8
 model = Widget(wanDirect,wanTag,numWanSi,characterSi,kpathSi,k_labelSi)
 
 fig = model.plotWidget()
-
-plt.show()
-plt.close()
