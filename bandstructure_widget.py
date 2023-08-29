@@ -363,8 +363,10 @@ class Bandstructure(object):
             ax = ax
         ax.plot(xaxis,bond_run/2) #divide by 2 because maximum presence would be if orbitals were perfectly split between orb 1 and orb 2 (or 1/√2 * 1/√2)
         if not (same_above or same_below):
-            #bond_energy = bond_run * coeffs_mag
-            ax.plot(xaxis, bond_energy,color="pink")
+            ax.plot(xaxis,bond_run / 2,color="royalblue",label="band-dep bond run")  # divide by 2 because maximum presence would be if orbitals were perfectly split between orb 1 and orb 2 (or 1/√2 * 1/√2)
+            ax.plot(xaxis, bond_energy,color="pink",label="bond energy")
+        else:
+            ax.plot(xaxis,bond_run / 2,color="royalblue",label="band-indep bond run")  # divide by 2 because maximum presence would be if orbitals were perfectly split between orb 1 and orb 2 (or 1/√2 * 1/√2)
         max = 2
         min = -2
         if (bond_run>2).any():
@@ -374,6 +376,7 @@ class Bandstructure(object):
         ax.set_ylim(min, max)
         ax.set_xticks([0,1])
         ax.set_xticklabels(self.close_labels)
+        ax.legend()
         plt.close()
         return ax
 
